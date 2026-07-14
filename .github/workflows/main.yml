@@ -27,20 +27,32 @@ jobs:
           curl -LO https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           
-          # Templates exakt dort platzieren, wo Godot sie sucht
+          # Templates am korrekten Ort platzieren
           mkdir -p "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable"
           cp templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable/ios.zip"
 
-      - name: Export Xcode Project from Godot
+      - name: Clean Project and Export Xcode Project
         run: |
-          # Wir löschen den lokalen .godot Cache rigoros
-          rm -rf .godot
+          # 1. Wir erstellen einen sauberen, temporären Arbeitsordner
+          mkdir -p ../clean_project
           
+          # 2. Wir kopieren dein gesamtes Projekt rüber, IGNORIEREN aber den blockierten .godot Ordner komplett!
+          rsync -av --exclude='.godot/' . ../clean_project/
+          
+          # 3. Wir wechseln in den sauberen Ordner und erzwingen volle Schreibrechte
+          cd ../clean_project
+          chmod -R 777 .
+          
+          # 4. Ordner für den Export erstellen
           mkdir -p build/ios
           
-          # Wir zwingen Godot mit "--user-dir", seine Metadaten in einen neutralen Ordner zu schreiben,
-          # um jegliche Schreibrechte-Konflikte (Permission Denied) zu umgehen.
-          /Applications/Godot.app/Contents/MacOS/Godot --headless --user-dir "$HOME/godot_user_dir" --path . --export-release "iOS" build/ios/Project.xcodeproj
+          # 5. Export im sauberen Ordner ausführen
+          /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "iOS" build/ios/Project.xcodeproj
+          
+          # 6. Das generierte Xcode-Projekt wieder zurück ins Hauptverzeichnis verschieben
+          cd $GITHUB_WORKSPACE
+          mkdir -p build
+          mv ../clean_project/build/ios build/
 
       - name: Build and Archive with Xcode (Unsigned)
         run: |
