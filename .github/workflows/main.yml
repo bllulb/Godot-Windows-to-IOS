@@ -31,28 +31,15 @@ jobs:
           mkdir -p "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable"
           cp templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable/ios.zip"
 
-      - name: Clean Project and Export Xcode Project
+      - name: Export Xcode Project from Godot
         run: |
-          # 1. Wir erstellen einen sauberen, temporären Arbeitsordner
-          mkdir -p ../clean_project
+          # Wir löschen den eventuell verbliebenen Cache-Ordner radikal vor dem Start
+          rm -rf .godot
           
-          # 2. Wir kopieren dein gesamtes Projekt rüber, IGNORIEREN aber den blockierten .godot Ordner komplett!
-          rsync -av --exclude='.godot/' . ../clean_project/
-          
-          # 3. Wir wechseln in den sauberen Ordner und erzwingen volle Schreibrechte
-          cd ../clean_project
-          chmod -R 777 .
-          
-          # 4. Ordner für den Export erstellen
           mkdir -p build/ios
           
-          # 5. Export im sauberen Ordner ausführen
+          # Export im sauberen Repository ausführen
           /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "iOS" build/ios/Project.xcodeproj
-          
-          # 6. Das generierte Xcode-Projekt wieder zurück ins Hauptverzeichnis verschieben
-          cd $GITHUB_WORKSPACE
-          mkdir -p build
-          mv ../clean_project/build/ios build/
 
       - name: Build and Archive with Xcode (Unsigned)
         run: |
