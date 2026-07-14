@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: '4.3' # Ersetze das mit deiner exakten Godot-Version (z. B. '4.4' oder '4.5' falls du Betas nutzt)
+  GODOT_VERSION: '4.3'
 
 jobs:
   build:
@@ -18,26 +18,31 @@ jobs:
 
       - name: Setup Godot Engine
         run: |
-          # Lädt Godot für macOS herunter
+          # 1. Godot für macOS herunterladen
           curl -LO https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
           mv Godot.app /Applications/Godot.app
           
-          # Lädt die Export Templates für iOS herunter und installiert sie
+          # 2. Export Templates herunterladen
           curl -LO https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
+          
+          # 3. Struktur exakt so aufbauen, wie Godot sie sucht
           mkdir -p ~/Library/Application\ Support/Godot/templates/${{ env.GODOT_VERSION }}.stable
-          mv templates/* ~/Library/Application\ Support/Godot/templates/${{ env.GODOT_VERSION }}.stable/
+          # Godot erwartet auf macOS die iOS-Templates verpackt als "ios.zip" in diesem Ordner
+          mv templates/ios.zip ~/Library/Application\ Support/Godot/templates/${{ env.GODOT_VERSION }}.stable/
 
       - name: Export Xcode Project from Godot
         run: |
+          # Bereinige eventuell fehlerhafte lokale Cache-Ordner aus dem Git-Commit
+          rm -rf .godot/
+          
           mkdir -p build/ios
-          # Exportiert dein Projekt als Xcode-Projekt
+          # Exportiert dein Projekt headless als Xcode-Projekt
           /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "iOS" build/ios/Project.xcodeproj
 
       - name: Build and Archive with Xcode (Unsigned)
         run: |
-          # Kompiliert das Xcode-Projekt ohne Code-Signing-Zertifikat (daher unsigniert)
           cd build/ios
           xcodebuild archive \
             -project Project.xcodeproj \
@@ -51,7 +56,6 @@ jobs:
 
       - name: Create Unsigned IPA
         run: |
-          # Packt das kompilierte Ergebnis in eine .ipa Datei um
           mkdir -p Payload
           cp -r build/ios/Project.xcarchive/Products/Applications/*.app Payload/
           zip -r build/Unsigned-App.ipa Payload
