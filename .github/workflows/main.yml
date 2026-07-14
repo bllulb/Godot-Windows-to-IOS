@@ -1,0 +1,26 @@
+name: Build Unsigned iOS IPA
+
+on:
+  push:
+    branches: [ main ] # Startet den Build, sobald du etwas hochlädst
+  workflow_dispatch: # Erlaubt es dir, den Build manuell per Mausklick zu starten
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Hier wird ein fertiger GitHub-Schnittstellen-Bauer für Godot iOS genutzt
+      - name: Godot iOS Build
+        uses: petrgon/godot-unsigned-ios-build@main
+        with:
+          godot-version: '4.3' # Passe deine exakte Godot-Version an (z. B. 4.2.2, 4.3, etc.)
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unsigned-iOS-App
+          path: build/*.ipa
