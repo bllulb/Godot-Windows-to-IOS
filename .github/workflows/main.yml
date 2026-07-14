@@ -27,20 +27,20 @@ jobs:
           curl -LO https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           
-          # Wir erstellen den exakten Pfad, den Godot im Log verlangt hat:
-          # /Users/runner/Library/Application Support/Godot/export_templates/4.3.stable/ios.zip
+          # Templates exakt dort platzieren, wo Godot sie sucht
           mkdir -p "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable"
           cp templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable/ios.zip"
 
       - name: Export Xcode Project from Godot
         run: |
-          # Wir löschen den lokalen .godot Cache, um den Schreibrechte-Fehler (Permission Denied) zu umgehen
+          # Wir löschen den lokalen .godot Cache rigoros
           rm -rf .godot
           
           mkdir -p build/ios
           
-          # Export-Befehl ausführen
-          /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "iOS" build/ios/Project.xcodeproj
+          # Wir zwingen Godot mit "--user-dir", seine Metadaten in einen neutralen Ordner zu schreiben,
+          # um jegliche Schreibrechte-Konflikte (Permission Denied) zu umgehen.
+          /Applications/Godot.app/Contents/MacOS/Godot --headless --user-dir "$HOME/godot_user_dir" --path . --export-release "iOS" build/ios/Project.xcodeproj
 
       - name: Build and Archive with Xcode (Unsigned)
         run: |
