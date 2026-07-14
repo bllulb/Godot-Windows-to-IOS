@@ -18,27 +18,28 @@ jobs:
 
       - name: Setup Godot Engine
         run: |
-          # 1. Godot für macOS herunterladen
+          # 1. Godot für macOS herunterladen und entpacken
           curl -LO https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_macos.universal.zip
           mv Godot.app /Applications/Godot.app
           
-          # 2. Export Templates herunterladen
+          # 2. Export Templates herunterladen und entpacken
           curl -LO https://github.com/godotengine/godot/releases/download/${{ env.GODOT_VERSION }}-stable/Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           unzip Godot_v${{ env.GODOT_VERSION }}-stable_export_templates.tpz
           
-          # 3. Struktur exakt so aufbauen, wie Godot sie sucht
-          mkdir -p ~/Library/Application\ Support/Godot/templates/${{ env.GODOT_VERSION }}.stable
-          # Godot erwartet auf macOS die iOS-Templates verpackt als "ios.zip" in diesem Ordner
-          mv templates/ios.zip ~/Library/Application\ Support/Godot/templates/${{ env.GODOT_VERSION }}.stable/
+          # Wir erstellen den exakten Pfad, den Godot im Log verlangt hat:
+          # /Users/runner/Library/Application Support/Godot/export_templates/4.3.stable/ios.zip
+          mkdir -p "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable"
+          cp templates/ios.zip "$HOME/Library/Application Support/Godot/export_templates/${{ env.GODOT_VERSION }}.stable/ios.zip"
 
       - name: Export Xcode Project from Godot
         run: |
-          # Bereinige eventuell fehlerhafte lokale Cache-Ordner aus dem Git-Commit
-          rm -rf .godot/
+          # Wir löschen den lokalen .godot Cache, um den Schreibrechte-Fehler (Permission Denied) zu umgehen
+          rm -rf .godot
           
           mkdir -p build/ios
-          # Exportiert dein Projekt headless als Xcode-Projekt
+          
+          # Export-Befehl ausführen
           /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --export-release "iOS" build/ios/Project.xcodeproj
 
       - name: Build and Archive with Xcode (Unsigned)
